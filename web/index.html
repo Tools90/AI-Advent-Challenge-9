@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Context Lab · День 9</title>
+<style>
+  :root {
+    --bg: #edf1f6;
+    --grid: rgba(30, 58, 95, .055);
+    --card: #fff;
+    --ink: #13243a;
+    --muted: #65748a;
+    --line: #d8e0ea;
+    --line-2: #c4d0de;
+    --navy: #10243b;
+    --blue: #2563eb;
+    --blue-soft: #e9f0ff;
+    --amber: #e08a00;
+    --amber-soft: #fff3dc;
+    --green: #0f8a5f;
+    --green-soft: #e6f6ef;
+    --red: #c73838;
+    --red-soft: #fdecec;
+    --mono: Consolas, "Courier New", monospace;
+    --shadow: 0 14px 38px rgba(18, 40, 70, .08);
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    color: var(--ink);
+    background-color: var(--bg);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  button, input, textarea { font-family: inherit; }
+  .app { height: 100%; display: flex; flex-direction: column; }
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 12px 20px; background: var(--navy); color: #fff; border-bottom: 3px solid var(--amber); }
+  .logo { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 9px; background: var(--amber); color: #1b1200; font-family: var(--mono); font-weight: 700; }
+  .brand h1 { margin: 0; font-size: 17px; letter-spacing: .3px; }
+  .brand p { margin: 2px 0 0; font-size: 11px; color: #9fb2c9; }
+  .topbar .spacer { flex: 1; }
+  .badge { font-family: var(--mono); font-size: 10.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.06); color: #c6d4e6; white-space: nowrap; }
+  .badge.ok { color: #8fe3bb; border-color: rgba(143,227,187,.35); }
+  .badge.warn { color: #ffd184; border-color: rgba(255,209,132,.35); }
+  .layout { flex: 1; display: flex; min-height: 0; }
+  .sidebar { width: 400px; flex: 0 0 auto; padding: 16px; border-right: 1px solid var(--line); background: rgba(255,255,255,.55); overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+  .block { background: var(--card); border: 1px solid var(--line); border-radius: 13px; box-shadow: var(--shadow); padding: 14px; }
+  .block h3 { margin: 0 0 9px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+  .hint { margin: 7px 0 0; font-size: 10.5px; color: var(--muted); line-height: 1.45; }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .stat { padding: 7px 8px; border: 1px solid var(--line); border-radius: 7px; background: #f7f9fc; }
+  .stat-label { font-size: 9.5px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); }
+  .stat-value { margin-top: 2px; font-family: var(--mono); font-size: 12px; font-weight: 700; }
+  .summary { margin: 8px 0 0; padding: 9px; background: #f7f9fc; border: 1px solid var(--line); border-radius: 8px; font-family: var(--mono); font-size: 10.5px; line-height: 1.45; white-space: pre-wrap; max-height: 180px; overflow: auto; color: var(--muted); }
+  .scenario-list, .detail-list { max-height: 240px; overflow: auto; display: flex; flex-direction: column; gap: 5px; }
+  .scenario-item { padding: 5px 7px; border-left: 2px solid var(--blue); background: #f7f9fc; border-radius: 4px; font-size: 10.5px; line-height: 1.35; }
+  .scenario-item.check { border-left-color: var(--amber); background: var(--amber-soft); }
+  .scenario-item b { color: var(--blue); font-family: var(--mono); font-size: 9.5px; }
+  .scenario-item.check b { color: var(--amber); }
+  .detail-item { font-size: 10.5px; color: var(--muted); }
+  .detail-item b { color: var(--ink); }
+  .primary, .ghost { border-radius: 9px; cursor: pointer; transition: .14s; }
+  .primary { padding: 10px 13px; font-size: 12px; font-weight: 700; color: #fff; background: var(--blue); border: 1px solid var(--blue); }
+  .primary:hover:not(:disabled) { filter: brightness(1.08); }
+  .primary:disabled { opacity: .5; cursor: default; }
+  .ghost { padding: 8px 11px; font-size: 11px; color: var(--muted); background: #fff; border: 1px solid var(--line-2); }
+  .ghost:hover:not(:disabled) { color: var(--ink); border-color: var(--navy); }
+  .ghost:disabled { opacity: .5; cursor: default; }
+  .buttons { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 9px; }
+  .buttons .primary, .buttons .ghost { flex: 1; white-space: nowrap; }
+  .status { margin-top: 8px; font-family: var(--mono); font-size: 10px; color: var(--muted); min-height: 14px; }
+  .results { overflow: auto; }
+  .results table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+  .results th, .results td { padding: 5px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+  .results th { color: var(--muted); font-size: 9.5px; text-transform: uppercase; }
+  .results td.ok { color: var(--green); font-weight: 700; }
+  .results td.no { color: var(--red); }
+  .compare-note { margin-top: 8px; padding: 8px; border: 1px dashed var(--line-2); border-radius: 7px; font-family: var(--mono); font-size: 10px; line-height: 1.45; color: var(--muted); }
+  .compare-wrap { width: 100%; max-width: 920px; margin: 0 auto; padding: 18px; background: var(--card); border: 1px solid var(--line); border-radius: 13px; box-shadow: var(--shadow); }
+  .compare-wrap h3 { margin: 0 0 12px; font-size: 15px; }
+  .compare-wrap table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .compare-wrap th, .compare-wrap td { padding: 7px 6px; border-bottom: 1px solid var(--line); text-align: left; }
+  .compare-wrap th { font-size: 10px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); }
+  .compare-wrap td.ok { color: var(--green); font-weight: 700; }
+  .compare-wrap td.no { color: var(--red); }
+  .compare-wrap .token-row td { font-family: var(--mono); }
+  .chat-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .chat-head { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.6); }
+  .chat-head h2 { margin: 0; font-size: 15px; }
+  .chat-head span { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .tabs { display: flex; gap: 6px; margin-left: auto; }
+  .tab { padding: 7px 11px; font-size: 11px; color: var(--muted); background: #fff; border: 1px solid var(--line-2); border-radius: 8px; cursor: pointer; }
+  .tab.active { color: #fff; background: var(--blue); border-color: var(--blue); }
+  .tab:disabled { opacity: .55; cursor: default; }
+  .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .empty { margin: auto; max-width: 520px; padding: 40px 26px; text-align: center; color: var(--muted); font-size: 13.5px; border: 1.5px dashed var(--line-2); border-radius: 13px; background: rgba(255,255,255,.55); }
+  .empty strong { display: block; color: var(--ink); font-size: 15px; margin-bottom: 6px; }
+  .turn { display: flex; flex-direction: column; gap: 8px; }
+  .user-row { display: flex; justify-content: flex-end; }
+  .user-bubble { max-width: 78%; padding: 10px 14px; border-radius: 11px 11px 3px 11px; background: var(--navy); color: #fff; font-size: 13px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .agent-row { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+  .agent-bubble { max-width: 82%; padding: 11px 14px; border: 1px solid var(--line); border-radius: 11px 11px 11px 3px; background: var(--card); font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: var(--shadow); }
+  .agent-bubble code { padding: 1px 4px; font-family: var(--mono); font-size: 12px; background: #eef2f7; border-radius: 4px; }
+  .request { max-width: 90%; border: 1px solid var(--line); border-radius: 8px; background: #f7f9fc; }
+  .request summary { padding: 6px 9px; font-family: var(--mono); font-size: 10px; color: var(--muted); cursor: pointer; }
+  .request pre { margin: 0; padding: 8px 9px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 9.5px; line-height: 1.4; max-height: 220px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .judge { max-width: 82%; padding: 5px 9px; border-radius: 7px; font-size: 11px; line-height: 1.4; }
+  .judge.ok { color: var(--green); background: var(--green-soft); border: 1px solid #b9e3d2; }
+  .judge.no { color: var(--red); background: var(--red-soft); border: 1px solid #e7b1b1; }
+  .turn-meta { margin-left: 28px; font-family: var(--mono); font-size: 9.5px; color: var(--muted); }
+  .turn-error { margin-left: 28px; padding: 9px 11px; border: 1px solid #e7b1b1; background: var(--red-soft); color: #8c2020; border-radius: 9px; font-size: 12px; white-space: pre-wrap; }
+  .loading { display: flex; align-items: center; gap: 12px; margin: 0 20px 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 11px; background: var(--card); box-shadow: var(--shadow); }
+  .spinner { width: 22px; height: 22px; border: 3px solid var(--blue-soft); border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading strong { display: block; font-size: 13px; }
+  .loading span { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .error-box { margin: 0 20px 12px; padding: 10px 12px; border: 1px solid #e7b1b1; background: var(--red-soft); color: #8c2020; border-radius: 9px; font-size: 12px; white-space: pre-wrap; }
+  .composer { display: flex; gap: 10px; align-items: flex-end; padding: 14px 18px 16px; border-top: 1px solid var(--line); background: rgba(255,255,255,.72); }
+  .composer textarea { flex: 1; resize: none; min-height: 46px; max-height: 160px; padding: 12px 14px; font-size: 13px; line-height: 1.45; color: var(--ink); background: #fff; border: 1px solid var(--line-2); border-radius: 10px; outline: none; }
+  .composer textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+  .composer .primary { height: 46px; padding: 0 20px; }
+  @media (max-width: 980px) {
+    .layout { flex-direction: column; }
+    .sidebar { width: 100%; border-right: 0; border-bottom: 1px solid var(--line); max-height: 52vh; }
+    .chat-panel { min-height: 48vh; }
+    .badge { display: none; }
+    .tabs { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="logo">C9</div>
+    <div class="brand">
+      <h1>Context Lab</h1>
+      <p>AI Advent Challenge · День 9 · DeepSeek · управление контекстом</p>
+    </div>
+    <div class="spacer"></div>
+    <span class="badge ok" id="modelBadge">DeepSeek Flash</span>
+    <span class="badge" id="pairsBadge">пар: —</span>
+    <span class="badge" id="configBadge">ключ: —</span>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="block">
+        <h3>Контекст активной вкладки</h3>
+        <div class="stat-grid">
+          <div class="stat"><div class="stat-label">пар</div><div class="stat-value" id="statPairs">0</div></div>
+          <div class="stat"><div class="stat-label">в summary</div><div class="stat-value" id="statSummarized">0</div></div>
+          <div class="stat"><div class="stat-label">ожидают</div><div class="stat-value" id="statPending">0</div></div>
+          <div class="stat"><div class="stat-label">обновлений</div><div class="stat-value" id="statUpdates">0</div></div>
+          <div class="stat"><div class="stat-label">чат, токены</div><div class="stat-value" id="statChatTokens">0</div></div>
+          <div class="stat"><div class="stat-label">создание summary</div><div class="stat-value" id="statSummaryTokens">0</div></div>
+          <div class="stat"><div class="stat-label">судья, токены</div><div class="stat-value" id="statJudgeTokens">0</div></div>
+          <div class="stat"><div class="stat-label">всего (без судьи)</div><div class="stat-value" id="statTotalTokens">0</div></div>
+        </div>
+        <pre class="summary" id="summaryBox">summary пока нет.</pre>
+        <p class="hint">Последние 5 пар — как есть. Старшие пары заменяются summary каждые 5 вытесненных пар.</p>
+      </div>
+
+      <div class="block">
+        <h3>Сценарий</h3>
+        <div class="scenario-list" id="scenarioList"></div>
+        <div class="detail-list" id="detailList"></div>
+        <div class="buttons">
+          <button class="ghost" id="runNoBtn" type="button">Без сжатия</button>
+          <button class="ghost" id="runYesBtn" type="button">Со сжатием</button>
+          <button class="primary" id="compareBtn" type="button">Сравнить</button>
+        </div>
+        <div class="status" id="scenarioStatus"></div>
+      </div>
+
+      <div class="block">
+        <h3>Результаты активной вкладки</h3>
+        <div class="results" id="results">Запусти сценарий, чтобы увидеть сравнение.</div>
+      </div>
+
+      <button class="ghost" id="resetBtn" type="button">Сбросить активную вкладку</button>
+    </aside>
+
+    <section class="chat-panel">
+      <div class="chat-head">
+        <h2>Диалог с агентом</h2>
+        <span id="chatModelInfo">DeepSeek Flash</span>
+        <div class="tabs">
+          <button class="tab active" id="tabNo" type="button">Без сжатия</button>
+          <button class="tab" id="tabYes" type="button">Со сжатием</button>
+          <button class="tab" id="tabCompare" type="button" disabled>Сравнение</button>
+        </div>
+      </div>
+      <div class="messages" id="messages">
+        <div class="empty">
+          <strong>Context Lab готов</strong>
+          Общайтесь вручную или запустите сценарий слева. У вкладок отдельные контексты, summary и результаты.
+        </div>
+      </div>
+      <div class="loading" id="loading" hidden>
+        <div class="spinner"></div>
+        <div><strong>Агент работает…</strong><span id="loadingMeta">0 с</span></div>
+      </div>
+      <div class="error-box" id="errorBox" hidden></div>
+      <form class="composer" id="form">
+        <textarea id="input" rows="1" placeholder="Сообщение агенту… (Enter — отправить, Shift+Enter — новая строка)" autofocus></textarea>
+        <button class="primary" id="sendBtn" type="submit">Отправить</button>
+      </form>
+    </section>
+  </div>
+</div>
+
+<script>
+  const storyPrompts = [
+    "Привет! Меня зовут Виктор, я запускаю приложение доставки еды.",
+    "Нужен MVP к 15 марта.",
+    "Бюджет — 2,5 млн рублей.",
+    "На старте делаем только iOS, Android позже.",
+    "Решили: в MVP не будет корзины, только быстрый заказ.",
+    "Команда — 3 разработчика и дизайнер.",
+    "Стек: Go на backend, SwiftUI на клиенте.",
+    "Оплата — Apple Pay и банковская карта.",
+    "Доставка только по Москве.",
+    "Тестовый запуск — 1 марта.",
+    "Интеграция с ресторанами через их API.",
+    "Логотип и брендбук уже готовы.",
+    "Нужны push-уведомления о статусе заказа.",
+    "Поддержка — чат в приложении, без телефона.",
+    "Итог: iOS MVP без корзины, до 15 марта, бюджет 2,5 млн.",
+    "Ещё нужен рейтинг ресторанов и отзывы.",
+    "Доставка бесплатная от 1000 рублей.",
+    "Курьеры — партнёрские, своих не нанимаем.",
+    "Аналитика — Яндекс.Метрика и Firebase.",
+    "Рекламу запускаем после тестового запуска."
+  ];
+
+  const details = [
+    { label: "Имя заказчика", question: "Как зовут заказчика?", expected: "Заказчика зовут Виктор.", keywords: ["виктор"] },
+    { label: "Дедлайн", question: "Какой дедлайн у MVP?", expected: "Дедлайн MVP — 15 марта.", keywords: ["15 марта", "15.03", "15-е марта"] },
+    { label: "Бюджет", question: "Какой бюджет проекта?", expected: "Бюджет проекта — 2,5 млн рублей.", keywords: ["2,5", "2.5", "2500000", "2 500 000"] },
+    { label: "Платформа", question: "Какие платформы на старте?", expected: "На старте только iOS, Android позже.", keywords: ["ios", "айос"] },
+    { label: "Решение по корзине", question: "Что решили по корзине?", expected: "В MVP не будет корзины, только быстрый заказ.", keywords: ["без корзин", "не будет корзин", "нет корзин"] },
+    { label: "Команда", question: "Какая команда проекта?", expected: "Команда — 3 разработчика и дизайнер.", keywords: ["3 разработ", "три разработ"] },
+    { label: "Стек", question: "Какой стек используется?", expected: "Стек: Go на backend, SwiftUI на клиенте.", keywords: ["go", "swiftui"], all: true },
+    { label: "Оплата", question: "Какая оплата будет в приложении?", expected: "Оплата — Apple Pay и банковская карта.", keywords: ["apple pay", "карт"] },
+    { label: "География", question: "Где работает доставка?", expected: "Доставка только по Москве.", keywords: ["москв"] },
+    { label: "Тестовый запуск", question: "Когда тестовый запуск?", expected: "Тестовый запуск — 1 марта.", keywords: ["1 марта", "1.03", "1-е марта"] }
+  ];
+
+  const scenario = [...storyPrompts, ...details.map((detail) => detail.question)];
+
+  const state = {
+    active: "no",
+    sessions: {
+      no: { turns: [], session: null, results: null },
+      yes: { turns: [], session: null, results: null }
+    },
+    busy: false,
+    timer: null
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const h = (value) => String(value == null ? "" : value).replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[ch]));
+  const fmt = (n) => {
+    if (n == null || isNaN(n)) return "—";
+    n = Math.round(n);
+    return n >= 1000 ? (n / 1000).toFixed(1) + "k" : String(n);
+  };
+  const current = () => state.sessions[state.active] || state.sessions.no;
+
+  async function api(path, options) {
+    const res = await fetch(path, options);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const error = new Error(data.message || data.error || ("HTTP " + res.status));
+      error.data = data;
+      throw error;
+    }
+    return data;
+  }
+
+  async function refreshState(mode) {
+    const data = await api(`/api/state?session=${encodeURIComponent(mode)}`);
+    state.sessions[mode].session = data.session;
+    $("modelBadge").textContent = data.model || "DeepSeek Flash";
+    $("chatModelInfo").textContent = data.model || "DeepSeek Flash";
+    const configured = !!data.configured;
+    $("configBadge").textContent = configured ? "ключ: есть" : "ключ: нет";
+    $("configBadge").className = "badge " + (configured ? "ok" : "warn");
+    if (mode === state.active) renderSession();
+  }
+
+  async function refreshAll() {
+    await Promise.all([refreshState("no"), refreshState("yes")]);
+    renderTabs();
+    updateView();
+    renderMessages();
+    renderResults();
+  }
+
+  function renderTabs() {
+    $("tabNo").className = "tab" + (state.active === "no" ? " active" : "");
+    $("tabYes").className = "tab" + (state.active === "yes" ? " active" : "");
+    $("tabCompare").className = "tab" + (state.active === "compare" ? " active" : "");
+    $("tabCompare").disabled = !(state.sessions.no.results && state.sessions.yes.results);
+  }
+
+  function updateView() {
+    const compare = state.active === "compare";
+    $("form").hidden = compare;
+    if (compare) $("loading").hidden = true;
+  }
+
+  function renderSession() {
+    const s = current().session || {};
+    const usage = s.chatUsage || {};
+    const su = s.summaryUsage || {};
+    const ju = s.judgeUsage || {};
+    const total = s.totalUsage || {};
+    $("pairsBadge").textContent = "пар: " + (s.pairs || 0);
+    $("statPairs").textContent = String(s.pairs || 0);
+    $("statSummarized").textContent = String(s.summarizedPairs || 0);
+    $("statPending").textContent = String(s.pendingPairs || 0);
+    $("statUpdates").textContent = String(s.summaryUpdates || 0);
+    $("statChatTokens").textContent = fmt(usage.totalTokens || 0);
+    $("statSummaryTokens").textContent = fmt(su.totalTokens || 0);
+    $("statJudgeTokens").textContent = fmt(ju.totalTokens || 0);
+    $("statTotalTokens").textContent = fmt(total.totalTokens || 0);
+    $("summaryBox").textContent = s.summary || "summary пока нет.";
+  }
+
+  function renderScenario() {
+    $("scenarioList").innerHTML = scenario.map((text, i) => {
+      const isCheck = i >= storyPrompts.length;
+      return `<div class="scenario-item ${isCheck ? "check" : ""}"><b>${i + 1}</b> ${h(text)}</div>`;
+    }).join("");
+    $("detailList").innerHTML = details.map((d, i) =>
+      `<div class="detail-item"><b>${i + 1}.</b> ${h(d.label)}</div>`
+    ).join("");
+  }
+
+  function renderComparison() {
+    const no = state.sessions.no.results;
+    const yes = state.sessions.yes.results;
+    if (!no || !yes) {
+      return `<div class="empty"><strong>Сравнение пока недоступно</strong>Сначала прогоните оба режима: без сжатия и со сжатием.</div>`;
+    }
+    const rows = details.map((detail, i) =>
+      `<tr><td>${h(detail.label)}</td><td class="${no.matched[i] ? "ok" : "no"}">${no.matched[i] ? "✓" : "—"}</td><td class="${yes.matched[i] ? "ok" : "no"}">${yes.matched[i] ? "✓" : "—"}</td></tr>`
+    ).join("");
+    const tokenRow = (label, field) =>
+      `<tr class="token-row"><td>${label}</td><td>${fmt(no[field])}</td><td>${fmt(yes[field])}</td></tr>`;
+    return `<div class="compare-wrap">
+      <h3>Сравнение режимов</h3>
+      <table>
+        <thead><tr><th>Деталь</th><th>Без сжатия</th><th>Со сжатием</th></tr></thead>
+        <tbody>${rows}
+          <tr><td>Найдено деталей</td><td>${no.found}/${no.total}</td><td>${yes.found}/${yes.total}</td></tr>
+          ${tokenRow("Токены чата", "chatTokens")}
+          ${tokenRow("Токены на создание summary", "summaryTokens")}
+          ${tokenRow("Токены судьи", "judgeTokens")}
+          ${tokenRow("Всего (без учета судьи)", "totalTokens")}
+          <tr class="token-row"><td>Обновлений summary</td><td>${no.summaryUpdates}</td><td>${yes.summaryUpdates}</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+  }
+
+  function renderMessages() {
+    const box = $("messages");
+    if (state.active === "compare") {
+      box.innerHTML = renderComparison();
+      return;
+    }
+    const turns = current().turns;
+    if (!turns.length) {
+      box.innerHTML = `<div class="empty"><strong>Context Lab готов</strong>Общайтесь вручную или запустите сценарий слева. У вкладок отдельные контексты, summary и результаты.</div>`;
+      return;
+    }
+    box.innerHTML = turns.map((turn) => {
+      const request = turn.request ? JSON.stringify(turn.request, null, 2) : "";
+      const usage = turn.turnUsage || {};
+      const total = turn.totalUsage || {};
+      const judge = turn.judge
+        ? `<div class="judge ${turn.judge.correct ? "ok" : "no"}">Судья: ${turn.judge.correct ? "✓ верно" : "✗ неверно"}${turn.judge.reason ? " · " + h(turn.judge.reason) : ""}</div>`
+        : "";
+      return `<div class="turn">
+        <div class="user-row"><div class="user-bubble">${h(turn.user)}</div></div>
+        ${request ? `<details class="request"><summary>Запрос к LLM</summary><pre>${h(request)}</pre></details>` : ""}
+        ${turn.reply ? `<div class="agent-row"><div class="agent-bubble">${h(turn.reply)}</div>${judge}</div>` : ""}
+        ${turn.error ? `<div class="turn-error">Ошибка: ${h(turn.error)}</div>` : ""}
+        <div class="turn-meta">вход: ${fmt(usage.promptTokens)} · выход: ${fmt(usage.completionTokens)} · за сессию без судьи: ${fmt(total.totalTokens)}</div>
+      </div>`;
+    }).join("");
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function setBusy(value) {
+    state.busy = value;
+    $("sendBtn").disabled = value;
+    $("input").disabled = value;
+    $("runNoBtn").disabled = value;
+    $("runYesBtn").disabled = value;
+    $("compareBtn").disabled = value;
+    $("resetBtn").disabled = value;
+    $("loading").hidden = !value;
+    if (value) {
+      const started = Date.now();
+      $("loadingMeta").textContent = "0 с";
+      state.timer = setInterval(() => {
+        $("loadingMeta").textContent = Math.floor((Date.now() - started) / 1000) + " с";
+      }, 250);
+    } else if (state.timer) {
+      clearInterval(state.timer);
+      state.timer = null;
+    }
+  }
+
+  function showError(message) {
+    $("errorBox").hidden = false;
+    $("errorBox").textContent = message;
+  }
+
+  function hideError() {
+    $("errorBox").hidden = true;
+    $("errorBox").textContent = "";
+  }
+
+  async function postChat(message, mode) {
+    const data = await api("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, session: mode })
+    });
+    const turn = {
+      user: message,
+      reply: data.reply,
+      request: data.request,
+      turnUsage: data.turnUsage,
+      totalUsage: data.totalUsage,
+      judge: null
+    };
+    state.sessions[mode].turns.push(turn);
+    if (mode === state.active) renderMessages();
+    await refreshState(mode);
+    if (mode === state.active) renderMessages();
+    return data;
+  }
+
+  async function judgeAnswer(mode, detail, answer) {
+    const data = await api("/api/judge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session: mode, question: detail.question, expected: detail.expected, answer })
+    });
+    const turns = state.sessions[mode].turns;
+    const turn = turns[turns.length - 1];
+    if (turn) {
+      turn.judge = { correct: data.correct, reason: data.reason };
+      if (data.sessionTotal) turn.totalUsage = data.sessionTotal;
+    }
+    await refreshState(mode);
+    if (mode === state.active) renderMessages();
+    return data;
+  }
+
+  async function sendManual() {
+    const message = $("input").value.trim();
+    if (!message || state.busy) return;
+    const mode = state.active;
+    hideError();
+    $("input").value = "";
+    state.sessions[mode].turns.push({ user: message });
+    renderMessages();
+    setBusy(true);
+    try {
+      await postChat(message, mode);
+    } catch (err) {
+      state.sessions[mode].turns.pop();
+      renderMessages();
+      showError(err.message);
+    } finally {
+      setBusy(false);
+      $("input").focus();
+    }
+  }
+
+  async function resetSession(mode) {
+    await api(`/api/reset?session=${encodeURIComponent(mode)}`, { method: "POST" });
+    state.sessions[mode].turns = [];
+    state.sessions[mode].results = null;
+    await refreshState(mode);
+    renderTabs();
+    updateView();
+    if (mode === state.active) {
+      renderMessages();
+      renderResults();
+    }
+  }
+
+  async function runMode(mode) {
+    if (state.busy) return null;
+    state.active = mode;
+    renderTabs();
+    updateView();
+    hideError();
+    setBusy(true);
+    $("scenarioStatus").textContent = mode === "yes" ? "Прогон со сжатием…" : "Прогон без сжатия…";
+    try {
+      await resetSession(mode);
+      const answers = [];
+      const matched = [];
+      for (let i = 0; i < scenario.length; i++) {
+        const isCheck = i >= storyPrompts.length;
+        $("scenarioStatus").textContent = `${mode === "yes" ? "Со сжатием" : "Без сжатия"}: ${isCheck ? "проверка " + (i - storyPrompts.length + 1) + "/" + details.length : (i + 1) + "/" + storyPrompts.length}`;
+        const data = await postChat(scenario[i], mode);
+        if (isCheck) {
+          const detail = details[i - storyPrompts.length];
+          const verdict = await judgeAnswer(mode, detail, data.reply);
+          answers.push(data.reply);
+          matched.push(verdict.correct);
+        }
+      }
+      const session = state.sessions[mode].session || {};
+      const result = {
+        mode,
+        answers,
+        matched,
+        found: matched.filter(Boolean).length,
+        total: details.length,
+        chatTokens: (session.chatUsage || {}).totalTokens || 0,
+        summaryTokens: (session.summaryUsage || {}).totalTokens || 0,
+        judgeTokens: (session.judgeUsage || {}).totalTokens || 0,
+        totalTokens: (session.totalUsage || {}).totalTokens || 0,
+        summaryUpdates: session.summaryUpdates || 0
+      };
+      state.sessions[mode].results = result;
+      renderTabs();
+      renderResults();
+      return result;
+    } catch (err) {
+      showError(err.message);
+      return null;
+    } finally {
+      setBusy(false);
+      $("scenarioStatus").textContent = "Готово";
+    }
+  }
+
+  function renderResults() {
+    if (state.active === "compare") {
+      $("results").textContent = "Смотрите вкладку «Сравнение».";
+      return;
+    }
+    const result = current().results;
+    const no = state.sessions.no.results;
+    const yes = state.sessions.yes.results;
+    if (!result) {
+      $("results").textContent = "Запусти сценарий для этой вкладки, чтобы увидеть результат.";
+      return;
+    }
+    const rows = details.map((detail, i) =>
+      `<tr><td>${h(detail.label)}</td><td class="${result.matched[i] ? "ok" : "no"}">${result.matched[i] ? "✓" : "—"}</td></tr>`
+    ).join("");
+    const compare = no && yes
+      ? `<div class="compare-note">Без сжатия: ${no.found}/${no.total}, ${fmt(no.totalTokens)} ток.<br>Со сжатием: ${yes.found}/${yes.total}, ${fmt(yes.totalTokens)} ток.</div>`
+      : "";
+    $("results").innerHTML = `<table>
+      <thead><tr><th>Деталь</th><th>Судья</th></tr></thead>
+      <tbody>${rows}
+        <tr><td>Найдено</td><td>${result.found}/${result.total}</td></tr>
+        <tr><td>Токены чата</td><td>${fmt(result.chatTokens)}</td></tr>
+        <tr><td>Токены на создание summary</td><td>${fmt(result.summaryTokens)}</td></tr>
+        <tr><td>Токены судьи</td><td>${fmt(result.judgeTokens)}</td></tr>
+        <tr><td>Всего (без учета судьи)</td><td>${fmt(result.totalTokens)}</td></tr>
+        <tr><td>Обновлений summary</td><td>${result.summaryUpdates}</td></tr>
+      </tbody></table>${compare}`;
+  }
+
+  async function runOne(mode) {
+    await runMode(mode);
+  }
+
+  async function runCompare() {
+    state.sessions.no.results = null;
+    state.sessions.yes.results = null;
+    const no = await runMode("no");
+    if (!no) return;
+    const yes = await runMode("yes");
+    if (!yes) return;
+    state.active = "compare";
+    renderTabs();
+    updateView();
+    renderMessages();
+    renderResults();
+    $("scenarioStatus").textContent = "Сравнение готово";
+  }
+
+  $("form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    sendManual();
+  });
+  $("input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      $("form").requestSubmit();
+    }
+  });
+  $("tabNo").addEventListener("click", () => {
+    if (state.busy) return;
+    state.active = "no";
+    renderTabs();
+    updateView();
+    renderMessages();
+    renderSession();
+    renderResults();
+  });
+  $("tabYes").addEventListener("click", () => {
+    if (state.busy) return;
+    state.active = "yes";
+    renderTabs();
+    updateView();
+    renderMessages();
+    renderSession();
+    renderResults();
+  });
+  $("tabCompare").addEventListener("click", () => {
+    if (state.busy || !(state.sessions.no.results && state.sessions.yes.results)) return;
+    state.active = "compare";
+    renderTabs();
+    updateView();
+    renderMessages();
+    renderResults();
+  });
+  $("runNoBtn").addEventListener("click", () => runOne("no"));
+  $("runYesBtn").addEventListener("click", () => runOne("yes"));
+  $("compareBtn").addEventListener("click", runCompare);
+  $("resetBtn").addEventListener("click", async () => {
+    if (state.busy) return;
+    try {
+      if (state.active === "compare") {
+        await resetSession("no");
+        await resetSession("yes");
+        state.active = "no";
+        renderTabs();
+        updateView();
+        renderMessages();
+        renderSession();
+        renderResults();
+      } else {
+        await resetSession(state.active);
+      }
+      hideError();
+    } catch (err) {
+      showError(err.message);
+    }
+  });
+
+  renderScenario();
+  renderTabs();
+  refreshAll().catch((err) => showError(err.message));
+</script>
+</body>
+</html>
